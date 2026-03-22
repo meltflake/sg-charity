@@ -6,7 +6,7 @@ import { i18n, i18nVar } from '../../i18n/utils';
 const stats = loadStats();
 const charities = getActiveCharities();
 const sectors = getSectors();
-const base = import.meta.env.BASE_URL;
+const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
 
 // --- Sector breakdown ---
 const sectorMax = Math.max(...Object.values(stats.sectors));

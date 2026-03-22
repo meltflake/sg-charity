@@ -17,7 +17,7 @@ interface Props {
 }
 
 const { charity } = Astro.props;
-const base = import.meta.env.BASE_URL;
+const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
 
 const sectorColor = charity.sector ? SECTOR_COLORS[charity.sector] || '#6b7280' : '#6b7280';
 const sectorIcon = charity.sector ? SECTOR_ICONS[charity.sector] || '' : '';

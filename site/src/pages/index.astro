@@ -5,7 +5,7 @@ import { i18n, i18nVar } from '../i18n/utils';
 
 const stats = loadStats();
 const sectors = getSectors();
-const base = import.meta.env.BASE_URL;
+const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
 ---
 
 <Base title="Home" description="Explore Singapore's 2,600+ registered charities — search by sector, check IPC status, compare financials, and discover transparent organisations.">
