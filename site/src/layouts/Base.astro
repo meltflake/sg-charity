@@ -8,12 +8,13 @@ interface Props {
 
 const { title, description = 'Explore Singapore\'s 2,600+ registered charities — search, filter, compare financials, and discover IPC-approved organisations.' } = Astro.props;
 const currentPath = Astro.url.pathname;
+const base = import.meta.env.BASE_URL;
 
 const navItems = [
-  { href: '/', label: 'Home', labelZh: '首页' },
-  { href: '/charities/', label: 'Directory', labelZh: '目录' },
-  { href: '/dashboard/', label: 'Dashboard', labelZh: '全景' },
-  { href: '/about/', label: 'About', labelZh: '关于' },
+  { href: base, label: 'Home', labelZh: '首页' },
+  { href: `${base}charities/`, label: 'Directory', labelZh: '目录' },
+  { href: `${base}dashboard/`, label: 'Dashboard', labelZh: '全景' },
+  { href: `${base}about/`, label: 'About', labelZh: '关于' },
 ];
 ---
 
@@ -24,8 +25,9 @@ const navItems = [
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description" content={description} />
   <title>{title} | SG Charity Map</title>
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-  <script is:inline>
+  <link rel="icon" type="image/svg+xml" href={`${base}favicon.svg`} />
+  <script is:inline define:vars={{ base }}>
+    window.__BASE = base;
     if(localStorage.getItem('sg-charity-lang')==='zh'){document.documentElement.dataset.lang='zh';document.documentElement.lang='zh'}
   </script>
 </head>
@@ -33,7 +35,7 @@ const navItems = [
   <header class="bg-white border-b border-gray-200 sticky top-0 z-50">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex justify-between items-center h-16">
-        <a href="/" class="flex items-center gap-2 font-bold text-xl text-primary-700 hover:text-primary-600 transition">
+        <a href={base} class="flex items-center gap-2 font-bold text-xl text-primary-700 hover:text-primary-600 transition">
           <span class="text-2xl">🗺️</span>
           <span>SG Charity Map</span>
         </a>

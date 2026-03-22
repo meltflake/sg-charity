@@ -6,6 +6,7 @@ import { i18n, i18nVar } from '../../i18n/utils';
 const stats = loadStats();
 const charities = getActiveCharities();
 const sectors = getSectors();
+const base = import.meta.env.BASE_URL;
 
 // --- Sector breakdown ---
 const sectorMax = Math.max(...Object.values(stats.sectors));
@@ -156,7 +157,7 @@ const financialPct = coverage[1].pct;
           <div class="flex items-center gap-3">
             <span class="text-xl w-7 text-center flex-shrink-0">{s.icon}</span>
             <div class="w-40 sm:w-48 flex-shrink-0">
-              <a href={`/charities/?sector=${encodeURIComponent(s.name)}`} class="text-sm font-medium text-gray-800 hover:text-primary-700 transition">
+              <a href={`${base}charities/?sector=${encodeURIComponent(s.name)}`} class="text-sm font-medium text-gray-800 hover:text-primary-700 transition">
                 {s.name}
               </a>
             </div>

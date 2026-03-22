@@ -216,7 +216,7 @@ const totalCount = charities.length;
       const icon = sectorIcons[c.se] || '';
 
       const a = document.createElement('a');
-      a.href = `/charities/${c.s}/`;
+      a.href = `${window.__BASE}charities/${c.s}/`;
       a.className = 'block bg-white rounded-xl border border-gray-200 p-5 hover:border-primary-300 hover:shadow-md transition group';
 
       // Header row: name + IPC badge

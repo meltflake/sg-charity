@@ -5,6 +5,7 @@ import { i18n, i18nVar } from '../i18n/utils';
 
 const stats = loadStats();
 const sectors = getSectors();
+const base = import.meta.env.BASE_URL;
 ---
 
 <Base title="Home" description="Explore Singapore's 2,600+ registered charities — search by sector, check IPC status, compare financials, and discover transparent organisations.">
@@ -20,14 +21,14 @@ const sectors = getSectors();
         <p class="mt-6 text-lg md:text-xl text-primary-100 leading-relaxed" {...i18nVar('home.description', { count: stats.active.toLocaleString(), sectors: sectors.length })}></p>
         <div class="mt-8 flex flex-col sm:flex-row gap-4">
           <a
-            href="/charities/"
+            href={`${base}charities/`}
             class="inline-flex items-center justify-center px-6 py-3 bg-white text-primary-700 font-semibold rounded-lg hover:bg-primary-50 transition shadow-lg"
           >
             <span {...i18n('home.cta.browse')}></span>
             <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
           </a>
           <a
-            href="/dashboard/"
+            href={`${base}dashboard/`}
             class="inline-flex items-center justify-center px-6 py-3 border-2 border-primary-300 text-white font-semibold rounded-lg hover:bg-primary-600 transition"
             {...i18n('home.cta.dashboard')}
           >
@@ -101,7 +102,7 @@ const sectors = getSectors();
         const color = SECTOR_COLORS[sector] || '#6b7280';
         return (
           <a
-            href={`/charities/?sector=${encodeURIComponent(sector)}`}
+            href={`${base}charities/?sector=${encodeURIComponent(sector)}`}
             class="group bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg hover:border-primary-300 transition-all duration-200"
           >
             <div class="text-3xl mb-3">{icon}</div>
@@ -148,7 +149,7 @@ const sectors = getSectors();
     const input = document.getElementById('search-input') as HTMLInputElement;
     const q = input?.value.trim();
     if (q) {
-      window.location.href = `/charities/?q=${encodeURIComponent(q)}`;
+      window.location.href = `${window.__BASE}charities/?q=${encodeURIComponent(q)}`;
     }
   });
 </script>
