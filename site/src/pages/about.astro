@@ -1,0 +1,131 @@
+---
+import Base from '../layouts/Base.astro';
+import { loadStats } from '../data/load';
+import { i18n, i18nVar } from '../i18n/utils';
+
+const stats = loadStats();
+---
+
+<Base title="About" description="Learn about SG Charity Map — an open data project bringing transparency to Singapore's charity sector.">
+
+  <!-- Page Header -->
+  <section class="bg-gradient-to-br from-primary-700 to-primary-900 text-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 md:py-20">
+      <h1 class="text-3xl md:text-4xl font-bold" {...i18n('about.title')}></h1>
+      <p class="text-primary-200 mt-2 text-lg" {...i18n('about.subtitle')}></p>
+    </div>
+  </section>
+
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16 space-y-16">
+
+    <!-- What is SG Charity Map -->
+    <section>
+      <h2 class="text-2xl font-bold text-gray-900 flex items-center gap-2">
+        <span class="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center text-primary-700 text-sm font-bold">?</span>
+        <span {...i18n('about.what.title')}></span>
+      </h2>
+      <div class="mt-4 text-gray-700 leading-relaxed space-y-4">
+        <p {...i18n('about.what.p1')}></p>
+        <p {...i18n('about.what.p2')}></p>
+        <p {...i18n('about.what.p3')}></p>
+      </div>
+    </section>
+
+    <!-- Data Sources -->
+    <section>
+      <h2 class="text-2xl font-bold text-gray-900 flex items-center gap-2">
+        <span class="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center text-primary-700 text-sm font-bold">#</span>
+        <span {...i18n('about.sources.title')}></span>
+      </h2>
+      <div class="mt-6 space-y-4">
+        <div class="bg-white rounded-xl border border-gray-200 p-6">
+          <div class="flex items-start gap-4">
+            <div class="w-12 h-12 bg-primary-50 rounded-lg flex items-center justify-center text-2xl shrink-0">🏛️</div>
+            <div>
+              <h3 class="font-semibold text-gray-900">charities.gov.sg</h3>
+              <p class="text-sm text-gray-500 mt-1" {...i18n('about.sources.charities.subtitle')}></p>
+              <p class="text-sm text-gray-600 mt-2" {...i18n('about.sources.charities.desc')}></p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl border border-gray-200 p-6">
+          <div class="flex items-start gap-4">
+            <div class="w-12 h-12 bg-primary-50 rounded-lg flex items-center justify-center text-2xl shrink-0">📊</div>
+            <div>
+              <h3 class="font-semibold text-gray-900">data.gov.sg</h3>
+              <p class="text-sm text-gray-500 mt-1" {...i18n('about.sources.datagov.subtitle')}></p>
+              <p class="text-sm text-gray-600 mt-2" {...i18nVar('about.sources.datagov.desc', { count: stats.with_geo.toLocaleString() })}></p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl border border-gray-200 p-6">
+          <div class="flex items-start gap-4">
+            <div class="w-12 h-12 bg-primary-50 rounded-lg flex items-center justify-center text-2xl shrink-0">💝</div>
+            <div>
+              <h3 class="font-semibold text-gray-900">giving.sg</h3>
+              <p class="text-sm text-gray-500 mt-1" {...i18n('about.sources.givingsg.subtitle')}></p>
+              <p class="text-sm text-gray-600 mt-2" {...i18nVar('about.sources.givingsg.desc', { count: stats.with_givingsg.toLocaleString() })}></p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Coverage Stats -->
+    <section>
+      <h2 class="text-2xl font-bold text-gray-900 flex items-center gap-2">
+        <span class="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center text-primary-700 text-sm font-bold">%</span>
+        <span {...i18n('about.coverage.title')}></span>
+      </h2>
+      <div class="mt-6 grid grid-cols-2 md:grid-cols-3 gap-4">
+        <div class="bg-gray-50 rounded-xl p-5 border border-gray-100">
+          <p class="text-2xl font-bold text-gray-900">{stats.total.toLocaleString()}</p>
+          <p class="text-sm text-gray-500 mt-1" {...i18n('about.coverage.total')}></p>
+        </div>
+        <div class="bg-gray-50 rounded-xl p-5 border border-gray-100">
+          <p class="text-2xl font-bold text-primary-700">{stats.active.toLocaleString()}</p>
+          <p class="text-sm text-gray-500 mt-1" {...i18n('about.coverage.active')}></p>
+        </div>
+        <div class="bg-gray-50 rounded-xl p-5 border border-gray-100">
+          <p class="text-2xl font-bold text-gray-900">{stats.deregistered.toLocaleString()}</p>
+          <p class="text-sm text-gray-500 mt-1" {...i18n('about.coverage.deregistered')}></p>
+        </div>
+        <div class="bg-gray-50 rounded-xl p-5 border border-gray-100">
+          <p class="text-2xl font-bold text-gray-900">{stats.with_profile.toLocaleString()}</p>
+          <p class="text-sm text-gray-500 mt-1" {...i18n('about.coverage.profiles')}></p>
+        </div>
+        <div class="bg-gray-50 rounded-xl p-5 border border-gray-100">
+          <p class="text-2xl font-bold text-gray-900">{stats.with_financials.toLocaleString()}</p>
+          <p class="text-sm text-gray-500 mt-1" {...i18n('about.coverage.financials')}></p>
+        </div>
+        <div class="bg-gray-50 rounded-xl p-5 border border-gray-100">
+          <p class="text-2xl font-bold text-gray-900">{stats.with_geo.toLocaleString()}</p>
+          <p class="text-sm text-gray-500 mt-1" {...i18n('about.coverage.gps')}></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Disclaimer -->
+    <section class="bg-amber-50 border border-amber-200 rounded-2xl p-8">
+      <h2 class="text-xl font-bold text-amber-900 flex items-center gap-2">
+        <svg class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+        <span {...i18n('about.disclaimer.title')}></span>
+      </h2>
+      <div class="mt-4 text-sm text-amber-800 space-y-3">
+        <p {...i18n('about.disclaimer.p1')}></p>
+        <p {...i18n('about.disclaimer.p2')}></p>
+        <p {...i18n('about.disclaimer.p3')}></p>
+      </div>
+    </section>
+
+    <!-- Contact / Contributing -->
+    <section class="text-center pb-4">
+      <h2 class="text-xl font-bold text-gray-900" {...i18n('about.opensource.title')}></h2>
+      <p class="text-gray-600 mt-2 text-sm" {...i18n('about.opensource.desc')}></p>
+    </section>
+
+  </div>
+
+</Base>

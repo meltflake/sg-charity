@@ -1,0 +1,454 @@
+---
+import Base from '../../layouts/Base.astro';
+import { t, tVar, i18n, i18nVar } from '../../i18n/utils';
+import { getActiveCharities, getSectors, SECTOR_COLORS, SECTOR_ICONS, stripHtml } from '../../data/load';
+
+const charities = getActiveCharities().map(c => ({
+  n: c.name,
+  s: c.slug,
+  se: c.sector || 'Others',
+  cl: c.classifications.slice(0, 3),
+  ip: c.ipc_status,
+  su: c.setup,
+  ob: stripHtml(c.objective)?.slice(0, 160) || '',
+  rd: c.registration_date,
+}));
+
+const sectors = getSectors();
+const sectorColors = SECTOR_COLORS;
+const sectorIcons = SECTOR_ICONS;
+const totalCount = charities.length;
+---
+
+<Base title="Charity Directory" description="Browse and search Singapore's 2,600+ registered charities. Filter by sector, IPC status, and more.">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Page Header -->
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-gray-900" {...i18n('dir.title')}>Charity Directory</h1>
+      <p class="mt-2 text-gray-600" {...i18nVar('dir.subtitle', { count: totalCount.toLocaleString() })}>Browse <span class="font-semibold text-gray-800">{totalCount}</span> active registered charities in Singapore</p>
+    </div>
+
+    <!-- Search & Filters -->
+    <div class="bg-white rounded-xl border border-gray-200 p-4 sm:p-6 mb-6 shadow-sm">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Search -->
+        <div class="sm:col-span-2 lg:col-span-1">
+          <label for="search-input" class="block text-xs font-medium text-gray-500 mb-1" {...i18n('dir.search')}>Search</label>
+          <div class="relative">
+            <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            <input
+              id="search-input"
+              type="text"
+              placeholder="Search by name or objective..."
+              data-i18n-placeholder
+              data-placeholder-en={t('dir.search.placeholder', 'en')}
+              data-placeholder-zh={t('dir.search.placeholder', 'zh')}
+              class="w-full pl-10 pr-8 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition"
+            />
+            <button id="search-clear" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 hidden" aria-label="Clear search">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Sector Filter -->
+        <div>
+          <label for="sector-filter" class="block text-xs font-medium text-gray-500 mb-1" {...i18n('dir.sector')}>Sector</label>
+          <select id="sector-filter" class="w-full py-2 px-3 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition">
+            <option value="" data-i18n-option data-en={t('dir.sector.all', 'en')} data-zh={t('dir.sector.all', 'zh')}>All Sectors</option>
+            {sectors.map(s => (
+              <option value={s}>{sectorIcons[s]} {s}</option>
+            ))}
+          </select>
+        </div>
+
+        <!-- IPC Filter -->
+        <div>
+          <label for="ipc-filter" class="block text-xs font-medium text-gray-500 mb-1" {...i18n('dir.ipc')}>IPC Status</label>
+          <select id="ipc-filter" class="w-full py-2 px-3 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition">
+            <option value="" data-i18n-option data-en={t('dir.ipc.all', 'en')} data-zh={t('dir.ipc.all', 'zh')}>All</option>
+            <option value="ipc" data-i18n-option data-en={t('dir.ipc.approved', 'en')} data-zh={t('dir.ipc.approved', 'zh')}>IPC Approved</option>
+            <option value="non-ipc" data-i18n-option data-en={t('dir.ipc.non', 'en')} data-zh={t('dir.ipc.non', 'zh')}>Non-IPC</option>
+          </select>
+        </div>
+
+        <!-- Sort -->
+        <div>
+          <label for="sort-select" class="block text-xs font-medium text-gray-500 mb-1" {...i18n('dir.sort')}>Sort by</label>
+          <select id="sort-select" class="w-full py-2 px-3 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none transition">
+            <option value="name" data-i18n-option data-en={t('dir.sort.name', 'en')} data-zh={t('dir.sort.name', 'zh')}>Name A-Z</option>
+            <option value="newest" data-i18n-option data-en={t('dir.sort.newest', 'en')} data-zh={t('dir.sort.newest', 'zh')}>Newest First</option>
+            <option value="sector" data-i18n-option data-en={t('dir.sort.sector', 'en')} data-zh={t('dir.sort.sector', 'zh')}>Sector</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Active Filters & Count -->
+      <div class="mt-4 flex flex-wrap items-center justify-between gap-2">
+        <div class="flex items-center gap-2 text-sm flex-wrap">
+          <span id="result-count" class="text-gray-600"></span>
+          <div id="active-filters" class="flex flex-wrap gap-1.5"></div>
+        </div>
+        <button id="clear-all-btn" class="hidden text-xs text-primary-600 hover:text-primary-800 font-medium transition" {...i18n('dir.clear')}>Clear all filters</button>
+      </div>
+    </div>
+
+    <!-- Results Grid -->
+    <div id="results-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    </div>
+
+    <!-- Empty State -->
+    <div id="empty-state" class="hidden text-center py-16">
+      <svg class="mx-auto w-16 h-16 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+      <h3 class="text-lg font-medium text-gray-600 mb-1" {...i18n('dir.empty.title')}>No charities found</h3>
+      <p class="text-sm text-gray-500" {...i18n('dir.empty.subtitle')}>Try adjusting your search or filters</p>
+    </div>
+
+    <!-- Pagination -->
+    <div id="pagination" class="mt-8 flex items-center justify-center gap-2 flex-wrap">
+    </div>
+  </div>
+
+  <!-- Embedded Data -->
+  <script id="i18n-dir" type="application/json">{"charities":{"en":"charities","zh":"家慈善机构"},"of":{"en":"of","zh":"/"},"showing":{"en":"showing","zh":"显示"},"prev":{"en":"Prev","zh":"上一页"},"next":{"en":"Next","zh":"下一页"},"searchPrefix":{"en":"Search: ","zh":"搜索："},"ipcApproved":{"en":"IPC Approved","zh":"IPC 认证"},"nonIpc":{"en":"Non-IPC","zh":"无 IPC"},"clearAll":{"en":"Clear all filters","zh":"清除所有筛选"}}</script>
+  <script id="charities-data" type="application/json" set:html={JSON.stringify(charities)}></script>
+  <script id="sector-colors" type="application/json" set:html={JSON.stringify(sectorColors)}></script>
+  <script id="sector-icons" type="application/json" set:html={JSON.stringify(sectorIcons)}></script>
+
+  <script>
+    // All data rendered from the server is pre-sanitized via escapeHtml before DOM insertion.
+    const allCharities = JSON.parse(document.getElementById('charities-data')!.textContent!);
+    const sectorColors: Record<string, string> = JSON.parse(document.getElementById('sector-colors')!.textContent!);
+    const sectorIcons: Record<string, string> = JSON.parse(document.getElementById('sector-icons')!.textContent!);
+    const i18nDir: Record<string, Record<string, string>> = JSON.parse(document.getElementById('i18n-dir')!.textContent!);
+    function ct(k: string): string { return i18nDir[k]?.[(document.documentElement as HTMLElement).dataset.lang || 'en'] || i18nDir[k]?.en || k; }
+
+    const PER_PAGE = 50;
+    let currentPage = 1;
+    let filtered: typeof allCharities = [];
+
+    // DOM refs
+    const searchInput = document.getElementById('search-input') as HTMLInputElement;
+    const searchClear = document.getElementById('search-clear') as HTMLButtonElement;
+    const sectorFilter = document.getElementById('sector-filter') as HTMLSelectElement;
+    const ipcFilter = document.getElementById('ipc-filter') as HTMLSelectElement;
+    const sortSelect = document.getElementById('sort-select') as HTMLSelectElement;
+    const resultsGrid = document.getElementById('results-grid')!;
+    const emptyState = document.getElementById('empty-state')!;
+    const pagination = document.getElementById('pagination')!;
+    const resultCount = document.getElementById('result-count')!;
+    const activeFiltersEl = document.getElementById('active-filters')!;
+    const clearAllBtn = document.getElementById('clear-all-btn')!;
+
+    function escapeHtml(text: string): string {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // Init from URL params
+    function initFromURL() {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('q')) searchInput.value = params.get('q')!;
+      if (params.get('sector')) sectorFilter.value = params.get('sector')!;
+      if (params.get('ipc')) ipcFilter.value = params.get('ipc')!;
+      if (params.get('sort')) sortSelect.value = params.get('sort')!;
+      if (params.get('page')) currentPage = Math.max(1, parseInt(params.get('page')!) || 1);
+    }
+
+    function updateURL() {
+      const params = new URLSearchParams();
+      if (searchInput.value) params.set('q', searchInput.value);
+      if (sectorFilter.value) params.set('sector', sectorFilter.value);
+      if (ipcFilter.value) params.set('ipc', ipcFilter.value);
+      if (sortSelect.value !== 'name') params.set('sort', sortSelect.value);
+      if (currentPage > 1) params.set('page', String(currentPage));
+      const qs = params.toString();
+      const url = window.location.pathname + (qs ? '?' + qs : '');
+      history.replaceState(null, '', url);
+    }
+
+    function applyFilters() {
+      const query = searchInput.value.trim().toLowerCase();
+      const sector = sectorFilter.value;
+      const ipc = ipcFilter.value;
+      const sort = sortSelect.value;
+
+      searchClear.classList.toggle('hidden', !query);
+
+      filtered = allCharities.filter((c: any) => {
+        if (query) {
+          const nameMatch = c.n.toLowerCase().includes(query);
+          const objMatch = c.ob.toLowerCase().includes(query);
+          if (!nameMatch && !objMatch) return false;
+        }
+        if (sector && c.se !== sector) return false;
+        if (ipc === 'ipc' && c.ip !== 'Live') return false;
+        if (ipc === 'non-ipc' && c.ip === 'Live') return false;
+        return true;
+      });
+
+      filtered.sort((a: any, b: any) => {
+        if (sort === 'name') return a.n.localeCompare(b.n);
+        if (sort === 'newest') {
+          const da = a.rd || '1900-01-01';
+          const db = b.rd || '1900-01-01';
+          return db.localeCompare(da);
+        }
+        if (sort === 'sector') {
+          const sc = a.se.localeCompare(b.se);
+          return sc !== 0 ? sc : a.n.localeCompare(b.n);
+        }
+        return 0;
+      });
+
+      const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
+      if (currentPage > totalPages) currentPage = totalPages;
+
+      updateURL();
+      renderResults();
+      renderPagination();
+      renderMeta();
+    }
+
+    function buildCard(c: any): HTMLElement {
+      const color = sectorColors[c.se] || '#6b7280';
+      const icon = sectorIcons[c.se] || '';
+
+      const a = document.createElement('a');
+      a.href = `/charities/${c.s}/`;
+      a.className = 'block bg-white rounded-xl border border-gray-200 p-5 hover:border-primary-300 hover:shadow-md transition group';
+
+      // Header row: name + IPC badge
+      const header = document.createElement('div');
+      header.className = 'flex items-start justify-between gap-2 mb-2';
+
+      const h3 = document.createElement('h3');
+      h3.className = 'text-sm font-semibold text-gray-900 group-hover:text-primary-700 transition leading-snug line-clamp-2';
+      h3.textContent = c.n;
+      header.appendChild(h3);
+
+      if (c.ip === 'Live') {
+        const ipcBadge = document.createElement('span');
+        ipcBadge.className = 'inline-flex items-center shrink-0 gap-0.5 px-1.5 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800';
+        ipcBadge.textContent = 'IPC';
+        header.appendChild(ipcBadge);
+      }
+
+      a.appendChild(header);
+
+      // Sector + setup row
+      const meta = document.createElement('div');
+      meta.className = 'flex items-center gap-2 flex-wrap mb-2';
+
+      const sectorBadge = document.createElement('span');
+      sectorBadge.className = 'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium';
+      sectorBadge.style.backgroundColor = color + '15';
+      sectorBadge.style.color = color;
+      sectorBadge.textContent = icon + ' ' + c.se;
+      meta.appendChild(sectorBadge);
+
+      if (c.su) {
+        const setup = document.createElement('span');
+        setup.className = 'text-xs text-gray-400';
+        setup.textContent = c.su;
+        meta.appendChild(setup);
+      }
+
+      a.appendChild(meta);
+
+      // Classifications
+      if (c.cl && c.cl.length > 0) {
+        const clWrap = document.createElement('div');
+        clWrap.className = 'flex flex-wrap gap-1 mb-1';
+        for (const cl of c.cl) {
+          const tag = document.createElement('span');
+          tag.className = 'inline-block px-1.5 py-0.5 rounded text-xs bg-gray-100 text-gray-600';
+          tag.textContent = cl;
+          clWrap.appendChild(tag);
+        }
+        a.appendChild(clWrap);
+      }
+
+      // Objective
+      if (c.ob) {
+        const obj = document.createElement('p');
+        obj.className = 'text-sm text-gray-500 line-clamp-2 mt-2';
+        obj.textContent = c.ob;
+        a.appendChild(obj);
+      }
+
+      return a;
+    }
+
+    function renderResults() {
+      const start = (currentPage - 1) * PER_PAGE;
+      const page = filtered.slice(start, start + PER_PAGE);
+
+      resultsGrid.replaceChildren();
+
+      if (page.length === 0) {
+        emptyState.classList.remove('hidden');
+        return;
+      }
+      emptyState.classList.add('hidden');
+
+      const fragment = document.createDocumentFragment();
+      for (const c of page) {
+        fragment.appendChild(buildCard(c));
+      }
+      resultsGrid.appendChild(fragment);
+    }
+
+    function renderPagination() {
+      const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
+      pagination.replaceChildren();
+      if (totalPages <= 1) return;
+
+      const pages: (number | string)[] = [];
+      const delta = 2;
+      for (let i = 1; i <= totalPages; i++) {
+        if (i === 1 || i === totalPages || (i >= currentPage - delta && i <= currentPage + delta)) {
+          pages.push(i);
+        } else if (pages[pages.length - 1] !== '...') {
+          pages.push('...');
+        }
+      }
+
+      function makeBtn(label: string, page: number, disabled: boolean, active: boolean): HTMLButtonElement {
+        const btn = document.createElement('button');
+        btn.textContent = label;
+        btn.className = `px-3 py-1.5 rounded-lg text-sm border ${active ? 'bg-primary-600 text-white border-primary-600' : 'border-gray-300'} ${disabled ? 'opacity-40 cursor-not-allowed' : 'hover:bg-gray-100'}`;
+        if (active) btn.classList.remove('hover:bg-gray-100');
+        btn.disabled = disabled;
+        if (!disabled) {
+          btn.addEventListener('click', () => {
+            currentPage = page;
+            updateURL();
+            renderResults();
+            renderPagination();
+            renderMeta();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          });
+        }
+        return btn;
+      }
+
+      pagination.appendChild(makeBtn(ct('prev'), currentPage - 1, currentPage === 1, false));
+
+      for (const p of pages) {
+        if (p === '...') {
+          const dots = document.createElement('span');
+          dots.className = 'px-2 py-1.5 text-sm text-gray-400';
+          dots.textContent = '...';
+          pagination.appendChild(dots);
+        } else {
+          pagination.appendChild(makeBtn(String(p), p as number, false, p === currentPage));
+        }
+      }
+
+      pagination.appendChild(makeBtn(ct('next'), currentPage + 1, currentPage === totalPages, false));
+    }
+
+    function renderMeta() {
+      const total = filtered.length;
+      const totalPages = Math.max(1, Math.ceil(total / PER_PAGE));
+      const start = (currentPage - 1) * PER_PAGE + 1;
+      const end = Math.min(currentPage * PER_PAGE, total);
+
+      let countText: string;
+      if (total === allCharities.length) {
+        countText = `${total.toLocaleString()} ${ct('charities')}`;
+      } else {
+        countText = `${total.toLocaleString()} ${ct('of')} ${allCharities.length.toLocaleString()} ${ct('charities')}`;
+      }
+      if (totalPages > 1) {
+        countText += ` (${ct('showing')} ${start}\u2013${end})`;
+      }
+      resultCount.textContent = countText;
+
+      // Active filter tags
+      activeFiltersEl.replaceChildren();
+      const hasFilters = !!(searchInput.value || sectorFilter.value || ipcFilter.value);
+
+      function addFilterTag(label: string, onRemove: () => void) {
+        const span = document.createElement('span');
+        span.className = 'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-primary-50 text-primary-700 border border-primary-200';
+
+        const text = document.createTextNode(label);
+        span.appendChild(text);
+
+        const btn = document.createElement('button');
+        btn.className = 'hover:text-primary-900 ml-0.5';
+        btn.setAttribute('aria-label', 'Remove filter');
+        btn.innerHTML = '<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>';
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          onRemove();
+        });
+        span.appendChild(btn);
+        activeFiltersEl.appendChild(span);
+      }
+
+      if (searchInput.value) {
+        addFilterTag(ct('searchPrefix') + searchInput.value, () => { searchInput.value = ''; resetAndFilter(); });
+      }
+      if (sectorFilter.value) {
+        addFilterTag(sectorFilter.value, () => { sectorFilter.value = ''; resetAndFilter(); });
+      }
+      if (ipcFilter.value) {
+        const label = ipcFilter.value === 'ipc' ? ct('ipcApproved') : ct('nonIpc');
+        addFilterTag(label, () => { ipcFilter.value = ''; resetAndFilter(); });
+      }
+
+      clearAllBtn.classList.toggle('hidden', !hasFilters);
+    }
+
+    function resetAndFilter() {
+      currentPage = 1;
+      applyFilters();
+    }
+
+    // Event listeners
+    let searchTimer: ReturnType<typeof setTimeout>;
+    searchInput.addEventListener('input', () => {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(() => resetAndFilter(), 200);
+    });
+
+    searchClear.addEventListener('click', () => {
+      searchInput.value = '';
+      resetAndFilter();
+      searchInput.focus();
+    });
+
+    sectorFilter.addEventListener('change', () => resetAndFilter());
+    ipcFilter.addEventListener('change', () => resetAndFilter());
+    sortSelect.addEventListener('change', () => resetAndFilter());
+
+    clearAllBtn.addEventListener('click', () => {
+      searchInput.value = '';
+      sectorFilter.value = '';
+      ipcFilter.value = '';
+      sortSelect.value = 'name';
+      resetAndFilter();
+    });
+
+    // Init
+    initFromURL();
+    applyFilters();
+
+    // Re-render on language change
+    new MutationObserver(function(){renderResults();renderPagination();renderMeta()}).observe(document.documentElement,{attributes:true,attributeFilter:['data-lang']});
+  </script>
+
+  <style>
+    .line-clamp-2 {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+  </style>
+</Base>

@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SG Charity Map - Dashboard</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #f8fafc; --card: #ffffff; --text: #0f172a; --muted: #64748b;
+    --border: #e2e8f0; --accent: #3b82f6; --accent2: #8b5cf6;
+  }
+  .dark {
+    --bg: #0f172a; --card: #1e293b; --text: #f1f5f9; --muted: #94a3b8;
+    --border: #334155; --accent: #60a5fa; --accent2: #a78bfa;
+  }
+  body { background: var(--bg); color: var(--text); transition: all 0.3s; }
+  .card { background: var(--card); border: 1px solid var(--border); }
+  .text-muted { color: var(--muted); }
+  .stat-num { font-size: 2.5rem; font-weight: 800; line-height: 1; }
+  @media (max-width: 640px) { .stat-num { font-size: 1.8rem; } }
+  .search-input { background: var(--card); border: 1px solid var(--border); color: var(--text); }
+  .search-input:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
+  .org-card { background: var(--card); border: 1px solid var(--border); }
+  .org-card:hover { border-color: var(--accent); }
+  .badge { font-size: 0.7rem; padding: 2px 8px; border-radius: 9999px; display: inline-block; }
+  .badge-ipc { background: #dcfce7; color: #166534; }
+  .dark .badge-ipc { background: #14532d; color: #86efac; }
+  .badge-sector { background: #dbeafe; color: #1e40af; }
+  .dark .badge-sector { background: #1e3a5f; color: #93c5fd; }
+  .tab-btn { padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 500; font-size: 0.875rem; border: none; }
+  .tab-btn.active { background: var(--accent); color: white; }
+  .tab-btn:not(.active) { background: var(--border); color: var(--muted); }
+  canvas { max-height: 400px; }
+  .section-title { font-size: 1.25rem; font-weight: 700; margin-bottom: 0.25rem; }
+  .section-sub { font-size: 0.85rem; color: var(--muted); margin-bottom: 1rem; }
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  .urgent-row { font-size: 0.8rem; padding: 6px 0; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+  .chart-container { position: relative; width: 100%; }
+  .progress-bar-bg { height: 12px; border-radius: 6px; background: var(--border); width: 100%; }
+  .progress-bar-fill { height: 12px; border-radius: 6px; transition: width 0.5s; }
+</style>
+<script>
+tailwind.config = { darkMode: 'class', theme: { extend: {} } }
+</script>
+</head>
+<body class="min-h-screen">
+
+<!-- Header -->
+<header class="sticky top-0 z-50 backdrop-blur-md bg-opacity-80" style="background:var(--card); border-bottom:1px solid var(--border);">
+  <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+    <div>
+      <h1 class="text-xl font-bold tracking-tight">SG Charity Map</h1>
+      <p class="text-xs text-muted">Singapore Charity Sector Dashboard</p>
+    </div>
+    <div class="flex items-center gap-3">
+      <span class="text-xs text-muted hidden sm:inline">Data: charities.gov.sg | Mar 2026</span>
+      <button id="themeToggle" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition" style="border:none;cursor:pointer;">
+        <span id="themeIcon">&#x1F319;</span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main class="max-w-7xl mx-auto px-4 py-6 space-y-6" id="app">
+  <p class="text-center text-muted py-20">Loading dashboard data...</p>
+</main>
+
+<script>
+// ── Theme ──
+const toggle = document.getElementById('themeToggle');
+const icon = document.getElementById('themeIcon');
+let dark = localStorage.getItem('theme') === 'dark';
+function applyTheme() {
+  document.documentElement.classList.toggle('dark', dark);
+  document.body.classList.toggle('dark', dark);
+  icon.textContent = dark ? '\u2600\uFE0F' : '\uD83C\uDF19';
+}
+applyTheme();
+toggle.onclick = function() { dark = !dark; localStorage.setItem('theme', dark ? 'dark' : 'light'); applyTheme(); rebuildCharts(); };
+
+const COLORS = ['#3b82f6','#8b5cf6','#ec4899','#f59e0b','#10b981','#ef4444','#06b6d4','#f97316','#6366f1','#84cc16'];
+
+let DATA = null;
+let charts = {};
+
+// ── Helpers ──
+function esc(s) {
+  if (!s) return '';
+  var d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+function fmt(n) {
+  if (n >= 1e9) return (n/1e9).toFixed(1) + 'B';
+  if (n >= 1e6) return (n/1e6).toFixed(1) + 'M';
+  if (n >= 1e3) return (n/1e3).toFixed(1) + 'K';
+  return n.toString();
+}
+
+// ── Init ──
+async function init() {
+  try {
+    var resp = await fetch('data/dashboard_data.json');
+    DATA = await resp.json();
+    render();
+  } catch(e) {
+    document.getElementById('app').textContent = 'Failed to load data: ' + e.message + '. Run: python3 build_dashboard_data.py';
+  }
+}
+
+// ── Render ──
+function render() {
+  var app = document.getElementById('app');
+  // Clear
+  while (app.firstChild) app.removeChild(app.firstChild);
+
+  // Nav tabs
+  var navDiv = document.createElement('div');
+  navDiv.className = 'flex flex-wrap gap-2 justify-center';
+  navDiv.id = 'navTabs';
+  var tabs = [
+    ['all','Overview'],['sectors','Sectors'],['timeline','Timeline'],['ipc','IPC'],
+    ['financials','Financials'],['geo','Geography'],['governance','Governance'],['search','Search']
+  ];
+  tabs.forEach(function(t) {
+    var btn = document.createElement('button');
+    btn.className = 'tab-btn' + (t[0]==='all' ? ' active' : '');
+    btn.dataset.section = t[0];
+    btn.textContent = t[1];
+    btn.onclick = function() {
+      navDiv.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});
+      btn.classList.add('active');
+      showSection(t[0]);
+    };
+    navDiv.appendChild(btn);
+  });
+  app.appendChild(navDiv);
+
+  // Build all sections
+  buildStatsSection(app);
+  buildSectorsSection(app);
+  buildTimelineSection(app);
+  buildIPCSection(app);
+  buildFinancialsSection(app);
+  buildGeoSection(app);
+  buildGovernanceSection(app);
+  buildSearchSection(app);
+
+  // Build charts
+  buildCharts();
+  doSearch();
+}
+
+// ── Section visibility ──
+function showSection(sec) {
+  var all = ['stats','sectors','timeline','ipc','financials','geo','governance','search'];
+  var mapping = {
+    all: all, sectors: ['stats','sectors'], timeline: ['stats','timeline'],
+    ipc: ['stats','ipc'], financials: ['stats','financials'],
+    geo: ['stats','geo'], governance: ['stats','governance'], search: ['search'],
+  };
+  var show = mapping[sec] || all;
+  all.forEach(function(s) {
+    var el = document.getElementById('sec-'+s);
+    if (el) el.style.display = show.indexOf(s) >= 0 ? '' : 'none';
+  });
+}
+
+// ── Section builders ──
+function makeCard(parent, cls, id) {
+  var d = document.createElement('div');
+  d.className = 'card rounded-xl p-5 ' + (cls||'');
+  if (id) d.id = id;
+  parent.appendChild(d);
+  return d;
+}
+
+function addTitle(parent, title, sub) {
+  var h = document.createElement('div');
+  h.className = 'section-title';
+  h.textContent = title;
+  parent.appendChild(h);
+  if (sub) {
+    var s = document.createElement('div');
+    s.className = 'section-sub';
+    s.textContent = sub;
+    parent.appendChild(s);
+  }
+}
+
+function addCanvas(parent, id, height) {
+  var wrap = document.createElement('div');
+  wrap.className = 'chart-container';
+  wrap.style.height = (height||350)+'px';
+  var c = document.createElement('canvas');
+  c.id = id;
+  wrap.appendChild(c);
+  parent.appendChild(wrap);
+}
+
+function addStatCard(parent, value, label, zhLabel, color, small) {
+  var card = document.createElement('div');
+  card.className = 'card rounded-xl p-5 text-center';
+  var num = document.createElement('div');
+  num.className = (small ? 'text-2xl font-extrabold' : 'stat-num') + ' text-' + color + '-500';
+  num.textContent = value;
+  card.appendChild(num);
+  var lbl = document.createElement('div');
+  lbl.className = 'font-medium text-sm mt-1';
+  lbl.textContent = label;
+  card.appendChild(lbl);
+  var zh = document.createElement('div');
+  zh.className = 'text-xs text-muted';
+  zh.textContent = zhLabel;
+  card.appendChild(zh);
+  parent.appendChild(card);
+}
+
+function buildStatsSection(app) {
+  var sec = document.createElement('section');
+  sec.id = 'sec-stats';
+
+  var row1 = document.createElement('div');
+  row1.className = 'grid grid-cols-2 md:grid-cols-4 gap-4 mb-4';
+  addStatCard(row1, DATA.stats.active.toLocaleString(), 'Active Charities', '\u6D3B\u8DC3\u673A\u6784', 'blue');
+  addStatCard(row1, DATA.stats.ipc.toLocaleString(), 'IPC Status', 'IPC \u7A0E\u6536\u51CF\u514D\u8D44\u683C', 'green');
+  addStatCard(row1, DATA.stats.with_financials.toLocaleString(), 'With Financials', '\u6709\u516C\u5F00\u8D22\u52A1', 'purple');
+  addStatCard(row1, '$' + (DATA.stats.total_income_m/1000).toFixed(1) + 'B', 'Total Income', '\u603B\u6536\u5165', 'amber');
+  sec.appendChild(row1);
+
+  var row2 = document.createElement('div');
+  row2.className = 'grid grid-cols-2 md:grid-cols-4 gap-4';
+  addStatCard(row2, DATA.stats.total.toLocaleString(), 'Total Registered', '\u542B\u5DF2\u6CE8\u9500', 'slate', true);
+  addStatCard(row2, DATA.stats.dereg.toLocaleString(), 'Deregistered', '\u5DF2\u6CE8\u9500', 'red', true);
+  addStatCard(row2, DATA.stats.total_employees.toLocaleString(), 'Employees', '\u4ECE\u4E1A\u4EBA\u5458', 'cyan', true);
+  addStatCard(row2, DATA.stats.avg_age + ' yrs', 'Avg Age', '\u5E73\u5747\u5E74\u9F84', 'orange', true);
+  sec.appendChild(row2);
+
+  app.appendChild(sec);
+}
+
+function buildSectorsSection(app) {
+  var sec = document.createElement('section');
+  sec.id = 'sec-sectors';
+  sec.className = 'grid md:grid-cols-2 gap-4';
+
+  var c1 = makeCard(sec, '');
+  addTitle(c1, 'Sector Distribution \u9886\u57DF\u5206\u5E03', DATA.sectors.length + ' sectors, Religious dominates at ' + DATA.sectors[0].count);
+  addCanvas(c1, 'chartSectorDoughnut', 350);
+
+  var c2 = makeCard(sec, '');
+  var commSector = DATA.sectors.find(function(s){return s.name==='Community';});
+  addTitle(c2, 'IPC Rate by Sector IPC\u7387\u5BF9\u6BD4', 'Religious 0% vs Community ' + (commSector ? commSector.ipc_rate : 0) + '%');
+  addCanvas(c2, 'chartIPCRate', 350);
+
+  app.appendChild(sec);
+}
+
+function buildTimelineSection(app) {
+  var sec = document.createElement('section');
+  sec.id = 'sec-timeline';
+  var card = makeCard(sec, '');
+  addTitle(card, 'Registration Timeline \u6CE8\u518C\u65F6\u95F4\u7EBF', '1983 - 2026, active vs deregistered charities per year');
+  addCanvas(card, 'chartTimeline', 350);
+  app.appendChild(sec);
+}
+
+function buildIPCSection(app) {
+  var sec = document.createElement('section');
+  sec.id = 'sec-ipc';
+  sec.className = 'grid md:grid-cols-2 gap-4';
+
+  var c1 = makeCard(sec, '');
+  addTitle(c1, 'IPC Expiry Schedule IPC\u5230\u671F\u65F6\u95F4', DATA.ipc.expired_count + ' already expired, ' + DATA.ipc.urgent.length + ' expiring within 90 days');
+  addCanvas(c1, 'chartIPC', 300);
+
+  var c2 = makeCard(sec, '');
+  addTitle(c2, 'Urgent: Expiring Soon \u5373\u5C06\u5230\u671F', 'Next 90 days (' + DATA.ipc.urgent.length + ' charities)');
+
+  var listWrap = document.createElement('div');
+  listWrap.style.maxHeight = '340px';
+  listWrap.style.overflowY = 'auto';
+
+  DATA.ipc.urgent.forEach(function(u) {
+    var row = document.createElement('div');
+    row.className = 'urgent-row';
+
+    var left = document.createElement('div');
+    var nameEl = document.createElement('div');
+    nameEl.className = 'font-medium text-sm';
+    nameEl.style.cssText = 'max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
+    nameEl.textContent = u.name;
+    left.appendChild(nameEl);
+    var badge = document.createElement('span');
+    badge.className = 'badge badge-sector';
+    badge.textContent = u.sector;
+    left.appendChild(badge);
+    row.appendChild(left);
+
+    var dateEl = document.createElement('div');
+    dateEl.className = 'text-xs font-mono';
+    var isVeryUrgent = new Date(u.expiry) < new Date('2026-04-14');
+    if (isVeryUrgent) dateEl.style.cssText = 'color:#ef4444;font-weight:bold';
+    else dateEl.style.color = 'var(--muted)';
+    dateEl.textContent = u.expiry;
+    row.appendChild(dateEl);
+
+    listWrap.appendChild(row);
+  });
+  c2.appendChild(listWrap);
+
+  app.appendChild(sec);
+}
+
+function buildFinancialsSection(app) {
+  var sec = document.createElement('section');
+  sec.id = 'sec-financials';
+
+  var row = document.createElement('div');
+  row.className = 'grid md:grid-cols-2 gap-4 mb-4';
+
+  var c1 = makeCard(row, '');
+  addTitle(c1, 'Income Distribution \u6536\u5165\u5206\u5E03', 'By income bracket (' + DATA.stats.with_financials + ' charities with data)');
+  addCanvas(c1, 'chartIncomeDist', 300);
+
+  var c2 = makeCard(row, '');
+  addTitle(c2, 'Top 10 by Income \u6536\u5165Top10', 'Millions SGD');
+  addCanvas(c2, 'chartTopIncome', 300);
+
+  sec.appendChild(row);
+
+  var c3 = makeCard(sec, '');
+  addTitle(c3, 'Sector Financials \u5404\u9886\u57DF\u8D22\u52A1', 'Income vs Spending by sector (M = millions SGD)');
+  addCanvas(c3, 'chartSectorFin', 350);
+
+  app.appendChild(sec);
+}
+
+function buildGeoSection(app) {
+  var sec = document.createElement('section');
+  sec.id = 'sec-geo';
+  sec.className = 'grid md:grid-cols-2 gap-4';
+
+  var c1 = makeCard(sec, '');
+  addTitle(c1, 'Geographic Distribution \u5730\u7406\u5206\u5E03', 'By region (based on postal code)');
+  addCanvas(c1, 'chartGeoRegion', 300);
+
+  var c2 = makeCard(sec, '');
+  addTitle(c2, 'Regional Sector Mix \u533A\u57DF\u9886\u57DF\u6784\u6210', 'Stacked view of sectors per region');
+  addCanvas(c2, 'chartGeoSectors', 300);
+
+  app.appendChild(sec);
+}
+
+function buildGovernanceSection(app) {
+  var sec = document.createElement('section');
+  sec.id = 'sec-governance';
+  sec.className = 'grid md:grid-cols-3 gap-4';
+
+  var c1 = makeCard(sec, '');
+  addTitle(c1, 'Board Size \u8463\u4E8B\u4F1A\u89C4\u6A21', 'Number of governing members');
+  addCanvas(c1, 'chartBoard', 250);
+
+  // Digital presence card
+  var c2 = makeCard(sec, 'flex flex-col justify-center items-center');
+  addTitle(c2, 'Digital Presence \u6570\u5B57\u5316');
+  var subEl = document.createElement('div');
+  subEl.className = 'section-sub text-center';
+  subEl.textContent = 'Of ' + DATA.governance.total_profiles + ' profiled charities';
+  c2.appendChild(subEl);
+
+  var barsDiv = document.createElement('div');
+  barsDiv.className = 'space-y-4 w-full px-4';
+  addProgressBar(barsDiv, 'Has Email', DATA.governance.has_email, DATA.governance.total_profiles, '#3b82f6');
+  addProgressBar(barsDiv, 'Has Website', DATA.governance.has_website, DATA.governance.total_profiles, '#8b5cf6');
+  c2.appendChild(barsDiv);
+
+  // Quick Facts card
+  var c3 = makeCard(sec, 'flex flex-col justify-center');
+  addTitle(c3, 'Quick Facts');
+  var facts = [
+    ['Most common board size', '5-9 members'],
+    ['Boards with 20+', (DATA.governance.board_dist['20+']||0).toString()],
+    ['Email coverage', Math.round(DATA.governance.has_email/DATA.governance.total_profiles*100)+'%'],
+    ['Website coverage', Math.round(DATA.governance.has_website/DATA.governance.total_profiles*100)+'%'],
+    ['No website', (DATA.governance.total_profiles - DATA.governance.has_website).toString()],
+  ];
+  var factsDiv = document.createElement('div');
+  factsDiv.className = 'space-y-3 text-sm';
+  facts.forEach(function(f) {
+    var row = document.createElement('div');
+    row.className = 'flex justify-between';
+    var lbl = document.createElement('span');
+    lbl.className = 'text-muted';
+    lbl.textContent = f[0];
+    var val = document.createElement('span');
+    val.className = 'font-bold';
+    val.textContent = f[1];
+    row.appendChild(lbl);
+    row.appendChild(val);
+    factsDiv.appendChild(row);
+  });
+  c3.appendChild(factsDiv);
+
+  app.appendChild(sec);
+}
+
+function addProgressBar(parent, label, val, total, color) {
+  var pct = Math.round(val/total*100);
+  var wrap = document.createElement('div');
+
+  var header = document.createElement('div');
+  header.className = 'flex justify-between text-sm mb-1';
+  var lbl = document.createElement('span');
+  lbl.textContent = label;
+  var vEl = document.createElement('span');
+  vEl.className = 'font-bold';
+  vEl.textContent = pct + '% (' + val + ')';
+  header.appendChild(lbl);
+  header.appendChild(vEl);
+  wrap.appendChild(header);
+
+  var bg = document.createElement('div');
+  bg.className = 'progress-bar-bg';
+  var fill = document.createElement('div');
+  fill.className = 'progress-bar-fill';
+  fill.style.width = pct + '%';
+  fill.style.background = color;
+  bg.appendChild(fill);
+  wrap.appendChild(bg);
+
+  parent.appendChild(wrap);
+}
+
+function buildSearchSection(app) {
+  var sec = document.createElement('section');
+  sec.id = 'sec-search';
+  var card = makeCard(sec, '');
+  addTitle(card, 'Charity Search \u673A\u6784\u641C\u7D22', 'Search ' + DATA.orgs.length + ' active charities by name, sector, or description');
+
+  var controls = document.createElement('div');
+  controls.className = 'flex flex-wrap gap-3 mb-4';
+
+  var input = document.createElement('input');
+  input.type = 'text';
+  input.id = 'searchInput';
+  input.className = 'search-input rounded-lg px-4 py-2 flex-1 min-w-[200px]';
+  input.placeholder = 'Search by name or keyword...';
+  input.addEventListener('input', doSearch);
+  controls.appendChild(input);
+
+  var selSector = document.createElement('select');
+  selSector.id = 'filterSector';
+  selSector.className = 'search-input rounded-lg px-3 py-2';
+  var optAll = document.createElement('option');
+  optAll.value = '';
+  optAll.textContent = 'All Sectors';
+  selSector.appendChild(optAll);
+  DATA.sectors.forEach(function(s) {
+    var o = document.createElement('option');
+    o.value = s.name;
+    o.textContent = s.name + ' (' + s.count + ')';
+    selSector.appendChild(o);
+  });
+  selSector.addEventListener('change', doSearch);
+  controls.appendChild(selSector);
+
+  var selIPC = document.createElement('select');
+  selIPC.id = 'filterIPC';
+  selIPC.className = 'search-input rounded-lg px-3 py-2';
+  [['','IPC Status'],['1','IPC Active'],['0','No IPC']].forEach(function(pair) {
+    var o = document.createElement('option');
+    o.value = pair[0];
+    o.textContent = pair[1];
+    selIPC.appendChild(o);
+  });
+  selIPC.addEventListener('change', doSearch);
+  controls.appendChild(selIPC);
+
+  card.appendChild(controls);
+
+  var results = document.createElement('div');
+  results.id = 'searchResults';
+  results.className = 'grid md:grid-cols-2 lg:grid-cols-3 gap-3';
+  results.style.cssText = 'max-height:600px; overflow-y:auto;';
+  card.appendChild(results);
+
+  var countEl = document.createElement('div');
+  countEl.id = 'searchCount';
+  countEl.className = 'text-xs text-muted mt-3 text-center';
+  card.appendChild(countEl);
+
+  app.appendChild(sec);
+}
+
+// ── Charts ──
+function rebuildCharts() {
+  Object.values(charts).forEach(function(c) { c.destroy(); });
+  charts = {};
+  buildCharts();
+}
+
+function buildCharts() {
+  var textColor = dark ? '#94a3b8' : '#64748b';
+  var gridColor = dark ? '#334155' : '#e2e8f0';
+  var scaleOpts = { ticks: { color: textColor, font: { size: 10 } }, grid: { color: gridColor } };
+
+  // Sector Doughnut
+  charts.sectorDoughnut = new Chart(document.getElementById('chartSectorDoughnut'), {
+    type: 'doughnut',
+    data: {
+      labels: DATA.sectors.map(function(s){return s.name;}),
+      datasets: [{
+        data: DATA.sectors.map(function(s){return s.count;}),
+        backgroundColor: COLORS,
+        borderWidth: 2,
+        borderColor: dark ? '#1e293b' : '#ffffff',
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'right', labels: { color: textColor, font: { size: 11 }, padding: 8 } },
+        tooltip: { callbacks: { label: function(ctx) { return ctx.label + ': ' + ctx.raw + ' (' + (ctx.raw/DATA.stats.active*100).toFixed(1) + '%)'; } } }
+      }
+    }
+  });
+
+  // IPC Rate Bar
+  charts.ipcRate = new Chart(document.getElementById('chartIPCRate'), {
+    type: 'bar',
+    data: {
+      labels: DATA.sectors.map(function(s){return s.name;}),
+      datasets: [{
+        label: 'IPC Rate %',
+        data: DATA.sectors.map(function(s){return s.ipc_rate;}),
+        backgroundColor: DATA.sectors.map(function(s,i){return COLORS[i]+'cc';}),
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+      scales: { x: Object.assign({}, scaleOpts, {max: 100}), y: scaleOpts },
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: function(ctx) { return ctx.raw + '% (' + DATA.sectors[ctx.dataIndex].ipc + '/' + DATA.sectors[ctx.dataIndex].count + ')'; } } }
+      }
+    }
+  });
+
+  // Timeline
+  charts.timeline = new Chart(document.getElementById('chartTimeline'), {
+    type: 'line',
+    data: {
+      labels: DATA.timeline.map(function(t){return t.year;}),
+      datasets: [
+        { label: 'Active', data: DATA.timeline.map(function(t){return t.active;}), borderColor: '#3b82f6', backgroundColor: '#3b82f633', fill: true, tension: 0.3, pointRadius: 1 },
+        { label: 'Deregistered', data: DATA.timeline.map(function(t){return t.dereg;}), borderColor: '#ef4444', backgroundColor: '#ef444433', fill: true, tension: 0.3, pointRadius: 1 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: { x: scaleOpts, y: Object.assign({}, scaleOpts, {beginAtZero: true}) },
+      plugins: { legend: { labels: { color: textColor } } },
+      interaction: { intersect: false, mode: 'index' },
+    }
+  });
+
+  // IPC quarterly
+  charts.ipc = new Chart(document.getElementById('chartIPC'), {
+    type: 'bar',
+    data: {
+      labels: DATA.ipc.quarters.map(function(q){return q.quarter;}),
+      datasets: [{
+        label: 'IPCs Expiring',
+        data: DATA.ipc.quarters.map(function(q){return q.count;}),
+        backgroundColor: DATA.ipc.quarters.map(function(q){return q.quarter <= '2026-Q2' ? '#ef4444cc' : '#3b82f6cc';}),
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: { x: scaleOpts, y: Object.assign({}, scaleOpts, {beginAtZero: true}) },
+      plugins: { legend: { display: false } }
+    }
+  });
+
+  // Income Distribution
+  charts.incomeDist = new Chart(document.getElementById('chartIncomeDist'), {
+    type: 'bar',
+    data: {
+      labels: DATA.financials.income_dist.map(function(d){return d.label;}),
+      datasets: [
+        { label: 'Orgs', data: DATA.financials.income_dist.map(function(d){return d.count;}), backgroundColor: '#3b82f6cc', borderRadius: 4, yAxisID: 'y' },
+        { label: 'Total Income ($M)', data: DATA.financials.income_dist.map(function(d){return d.total_income;}), backgroundColor: '#f59e0bcc', borderRadius: 4, yAxisID: 'y1' },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: {
+        x: scaleOpts,
+        y: Object.assign({}, scaleOpts, { position: 'left', beginAtZero: true, title: { display: true, text: 'Count', color: textColor } }),
+        y1: Object.assign({}, scaleOpts, { position: 'right', beginAtZero: true, grid: { drawOnChartArea: false }, title: { display: true, text: 'Income ($M)', color: textColor } }),
+      },
+      plugins: { legend: { labels: { color: textColor } } }
+    }
+  });
+
+  // Top 10 Income
+  charts.topIncome = new Chart(document.getElementById('chartTopIncome'), {
+    type: 'bar',
+    data: {
+      labels: DATA.financials.top_income.map(function(d){return d.name.length > 25 ? d.name.substring(0,25)+'...' : d.name;}),
+      datasets: [{
+        label: 'Income ($M)',
+        data: DATA.financials.top_income.map(function(d){return d.income;}),
+        backgroundColor: COLORS.map(function(c){return c+'cc';}),
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+      scales: { x: scaleOpts, y: Object.assign({}, scaleOpts, {ticks:{font:{size:9}}}) },
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: function(ctx) { return '$' + ctx.raw + 'M | Efficiency: ' + DATA.financials.top_income[ctx.dataIndex].efficiency + '%'; } } }
+      }
+    }
+  });
+
+  // Sector Financials
+  charts.sectorFin = new Chart(document.getElementById('chartSectorFin'), {
+    type: 'bar',
+    data: {
+      labels: DATA.financials.by_sector.map(function(s){return s.name;}),
+      datasets: [
+        { label: 'Income ($M)', data: DATA.financials.by_sector.map(function(s){return s.income;}), backgroundColor: '#3b82f6cc', borderRadius: 4 },
+        { label: 'Spending ($M)', data: DATA.financials.by_sector.map(function(s){return s.spending;}), backgroundColor: '#ef4444cc', borderRadius: 4 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: { x: scaleOpts, y: Object.assign({}, scaleOpts, {beginAtZero: true}) },
+      plugins: {
+        legend: { labels: { color: textColor } },
+        tooltip: { callbacks: { afterLabel: function(ctx) {
+          var s = DATA.financials.by_sector[ctx.dataIndex];
+          return 'Avg: $' + s.avg_income + 'M | Efficiency: ' + s.efficiency + '%';
+        }}}
+      }
+    }
+  });
+
+  // Geo Region
+  charts.geoRegion = new Chart(document.getElementById('chartGeoRegion'), {
+    type: 'bar',
+    data: {
+      labels: DATA.geo.map(function(g){return g.region;}),
+      datasets: [{
+        label: 'Charities',
+        data: DATA.geo.map(function(g){return g.count;}),
+        backgroundColor: COLORS.slice(0,5).map(function(c){return c+'cc';}),
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: { x: scaleOpts, y: Object.assign({}, scaleOpts, {beginAtZero: true}) },
+      plugins: { legend: { display: false } }
+    }
+  });
+
+  // Geo Sectors Stacked
+  var allSectors = [];
+  DATA.geo.forEach(function(g) {
+    Object.keys(g.sectors).forEach(function(s) {
+      if (allSectors.indexOf(s) < 0) allSectors.push(s);
+    });
+  });
+  charts.geoSectors = new Chart(document.getElementById('chartGeoSectors'), {
+    type: 'bar',
+    data: {
+      labels: DATA.geo.map(function(g){return g.region;}),
+      datasets: allSectors.map(function(sec, i) {
+        return {
+          label: sec,
+          data: DATA.geo.map(function(g){return g.sectors[sec]||0;}),
+          backgroundColor: COLORS[i % COLORS.length]+'cc',
+        };
+      })
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: {
+        x: Object.assign({}, scaleOpts, {stacked: true}),
+        y: Object.assign({}, scaleOpts, {stacked: true, beginAtZero: true}),
+      },
+      plugins: { legend: { labels: { color: textColor, font: { size: 9 } }, position: 'bottom' } },
+    }
+  });
+
+  // Board Distribution
+  var boardLabels = ['<5','5-9','10-14','15-19','20+'];
+  charts.board = new Chart(document.getElementById('chartBoard'), {
+    type: 'doughnut',
+    data: {
+      labels: boardLabels,
+      datasets: [{
+        data: boardLabels.map(function(l){return DATA.governance.board_dist[l]||0;}),
+        backgroundColor: COLORS.slice(0,5),
+        borderWidth: 2,
+        borderColor: dark ? '#1e293b' : '#ffffff',
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom', labels: { color: textColor, font: { size: 10 } } },
+        tooltip: { callbacks: { label: function(ctx) { return ctx.label + ': ' + ctx.raw + ' (' + (ctx.raw/DATA.governance.total_profiles*100).toFixed(1) + '%)'; } } }
+      }
+    }
+  });
+}
+
+// ── Search ──
+function doSearch() {
+  var inputEl = document.getElementById('searchInput');
+  var sectorEl = document.getElementById('filterSector');
+  var ipcEl = document.getElementById('filterIPC');
+  if (!inputEl) return;
+
+  var q = inputEl.value.toLowerCase();
+  var sector = sectorEl ? sectorEl.value : '';
+  var ipc = ipcEl ? ipcEl.value : '';
+
+  var results = DATA.orgs;
+  if (q) {
+    results = results.filter(function(o) {
+      return o.n.toLowerCase().indexOf(q) >= 0 ||
+             (o.d && o.d.toLowerCase().indexOf(q) >= 0) ||
+             (o.c && o.c.toLowerCase().indexOf(q) >= 0);
+    });
+  }
+  if (sector) results = results.filter(function(o){return o.s === sector;});
+  if (ipc !== '') results = results.filter(function(o){return o.i === parseInt(ipc);});
+
+  var shown = results.slice(0, 60);
+  var container = document.getElementById('searchResults');
+  var countEl = document.getElementById('searchCount');
+  if (!container) return;
+
+  // Clear previous results
+  while (container.firstChild) container.removeChild(container.firstChild);
+
+  shown.forEach(function(o) {
+    var card = document.createElement('div');
+    card.className = 'org-card rounded-lg p-3 transition';
+
+    var name = document.createElement('div');
+    name.className = 'font-semibold text-sm mb-1';
+    name.textContent = o.n;
+    card.appendChild(name);
+
+    var badges = document.createElement('div');
+    badges.className = 'flex flex-wrap gap-1 mb-2';
+    var bSector = document.createElement('span');
+    bSector.className = 'badge badge-sector';
+    bSector.textContent = o.s;
+    badges.appendChild(bSector);
+    if (o.i) {
+      var bIPC = document.createElement('span');
+      bIPC.className = 'badge badge-ipc';
+      bIPC.textContent = 'IPC';
+      badges.appendChild(bIPC);
+    }
+    if (o.t) {
+      var bType = document.createElement('span');
+      bType.className = 'badge';
+      bType.style.cssText = 'background:var(--border);color:var(--muted)';
+      bType.textContent = o.t;
+      badges.appendChild(bType);
+    }
+    card.appendChild(badges);
+
+    if (o.d) {
+      var desc = document.createElement('div');
+      desc.className = 'text-xs text-muted';
+      desc.style.cssText = 'display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;';
+      desc.textContent = o.d;
+      card.appendChild(desc);
+    }
+
+    var meta = document.createElement('div');
+    meta.className = 'text-xs text-muted mt-1';
+    var parts = [];
+    if (o.y) parts.push('Est. ' + o.y);
+    if (o.c) parts.push(o.c.replace(/\|/g, ', '));
+    meta.textContent = parts.join(' | ');
+    card.appendChild(meta);
+
+    container.appendChild(card);
+  });
+
+  if (countEl) {
+    countEl.textContent = results.length > 60
+      ? 'Showing 60 of ' + results.length + ' results'
+      : results.length + ' results';
+  }
+}
+
+init();
+</script>
+
+</body>
+</html>

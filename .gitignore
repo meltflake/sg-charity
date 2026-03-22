@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.astro/
+__pycache__/
+*.pyc
+.env
+.DS_Store
+.claude/
+.playwright-mcp/

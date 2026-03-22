@@ -1,0 +1,136 @@
+[
+  {
+    "CharityIPCName": "Zu-Lin Temple Association",
+    "UENNo": "S89SS0037E",
+    "Type": "Registered",
+    "CharityStatus": "Registered",
+    "IPCStatus": null,
+    "IPCValidFrom": null,
+    "IPCValidTill": null,
+    "PrimarySector": "Religious",
+    "PrimaryClassification": [
+      "Buddhism"
+    ],
+    "SectorAdministrato": "Ministry of Culture, Community and Youth",
+    "Activities": [
+      "Financial assistance, bursaries & scholarships"
+    ],
+    "RegistrationDate": "07/4/2003",
+    "DeRegistrationText": null,
+    "NameofURL": null,
+    "OtherURL": null,
+    "DeRegistrationDate": null,
+    "CharityAccountCRMRecordID": "3c880486-7965-e311-82db-005056b30484",
+    "RelatedAccountOrgID": null,
+    "TotalRecords": "3173",
+    "shoIPCPeriod": false,
+    "CharitySetup": "Society"
+  },
+  {
+    "CharityIPCName": "Zonta Singapore- Project Pari Fund",
+    "UENNo": "T10CC0004L",
+    "Type": "Registered",
+    "CharityStatus": "Registered with IPC",
+    "IPCStatus": "Live",
+    "IPCValidFrom": "01/2/2024",
+    "IPCValidTill": "31/10/2026",
+    "PrimarySector": "Social and Welfare",
+    "PrimaryClassification": [
+      "Community"
+    ],
+    "SectorAdministrato": "Ministry of Social and Family Development",
+    "Activities": [
+      "Financial assistance, bursaries & scholarships"
+    ],
+    "RegistrationDate": "21/4/2010",
+    "DeRegistrationText": null,
+    "NameofURL": null,
+    "OtherURL": null,
+    "DeRegistrationDate": null,
+    "CharityAccountCRMRecordID": "a63d6c38-7a65-e311-8fda-005056b30485",
+    "RelatedAccountOrgID": null,
+    "TotalRecords": "3173",
+    "shoIPCPeriod": true,
+    "CharitySetup": "Others"
+  },
+  {
+    "CharityIPCName": "ZION SERANGOON BIBLE-PRESBYTERIAN CHURCH",
+    "UENNo": "S86SS0063K",
+    "Type": "Registered",
+    "CharityStatus": "Registered",
+    "IPCStatus": null,
+    "IPCValidFrom": null,
+    "IPCValidTill": null,
+    "PrimarySector": "Religious",
+    "PrimaryClassification": [
+      "Christianity"
+    ],
+    "SectorAdministrato": "Ministry of Culture, Community and Youth",
+    "Activities": [
+      "Supports other Charities",
+      "Training & education"
+    ],
+    "RegistrationDate": "24/6/1988",
+    "DeRegistrationText": null,
+    "NameofURL": null,
+    "OtherURL": null,
+    "DeRegistrationDate": null,
+    "CharityAccountCRMRecordID": "41b84c12-7a65-e311-8fda-005056b30485",
+    "RelatedAccountOrgID": null,
+    "TotalRecords": "3173",
+    "shoIPCPeriod": false,
+    "CharitySetup": "Society"
+  },
+  {
+    "CharityIPCName": "Zion Presbyterian Church",
+    "UENNo": "S90SS0056K",
+    "Type": "Registered",
+    "CharityStatus": "Registered",
+    "IPCStatus": null,
+    "IPCValidFrom": null,
+    "IPCValidTill": null,
+    "PrimarySector": "Religious",
+    "PrimaryClassification": [
+      "Christianity"
+    ],
+    "SectorAdministrato": "Ministry of Culture, Community and Youth",
+    "Activities": [],
+    "RegistrationDate": "15/3/1989",
+    "DeRegistrationText": null,
+    "NameofURL": null,
+    "OtherURL": null,
+    "DeRegistrationDate": null,
+    "CharityAccountCRMRecordID": "37125177-7a65-e311-8fda-005056b30485",
+    "RelatedAccountOrgID": null,
+    "TotalRecords": "3173",
+    "shoIPCPeriod": false,
+    "CharitySetup": "Society"
+  },
+  {
+    "CharityIPCName": "Zion Living Streams Community Church",
+    "UENNo": "S98SS0054C",
+    "Type": "Registered",
+    "CharityStatus": "Registered",
+    "IPCStatus": null,
+    "IPCValidFrom": null,
+    "IPCValidTill": null,
+    "PrimarySector": "Religious",
+    "PrimaryClassification": [
+      "Christianity"
+    ],
+    "SectorAdministrato": "Ministry of Culture, Community and Youth",
+    "Activities": [
+      "Direct Services"
+    ],
+    "RegistrationDate": "10/12/1998",
+    "DeRegistrationText": null,
+    "NameofURL": null,
+    "OtherURL": null,
+    "DeRegistrationDate": null,
+    "CharityAccountCRMRecordID": "8efe2df3-7a65-e311-8fda-005056b30485",
+    "RelatedAccountOrgID": null,
+    "TotalRecords": "3173",
+    "shoIPCPeriod": false,
+    "CharitySetup": "Society"
+  }
+]

@@ -1,0 +1,21 @@
+{
+  "total": 3173,
+  "active": 2636,
+  "deregistered": 537,
+  "with_profile": 2635,
+  "with_financials": 860,
+  "with_geo": 476,
+  "with_givingsg": 326,
+  "sectors": {
+    "Social and Welfare": 446,
+    "Others": 272,
+    "Health": 209,
+    "Religious": 1148,
+    "Education": 228,
+    "Arts and Heritage": 167,
+    "Community": 98,
+    "Sports": 68
+  },
+  "ipc_active": 707,
+  "ipc_expiring_2026": 232
+}
