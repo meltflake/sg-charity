@@ -25,6 +25,19 @@ const navItems = [
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description" content={description} />
   <title>{title} | SG Charity Map</title>
+  <link rel="canonical" href={`https://meltflake.com${Astro.url.pathname}`} />
+  <!-- Open Graph -->
+  <meta property="og:title" content={`${title} | SG Charity Map`} />
+  <meta property="og:description" content={description} />
+  <meta property="og:url" content={`https://meltflake.com${Astro.url.pathname}`} />
+  <meta property="og:site_name" content="SG Charity Map" />
+  <meta property="og:locale" content="en_SG" />
+  <meta property="og:type" content="website" />
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content={`${title} | SG Charity Map`} />
+  <meta name="twitter:description" content={description} />
+  <link rel="sitemap" href="/sg-charity/sitemap-index.xml" />
   <link rel="icon" type="image/svg+xml" href={`${base}favicon.svg`} />
   <script is:inline define:vars={{ base }}>
     window.__BASE = base;

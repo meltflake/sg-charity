@@ -1,0 +1,15 @@
+{
+  "name": "SG Charity Map",
+  "short_name": "SG Charity",
+  "start_url": "/sg-charity/",
+  "display": "standalone",
+  "background_color": "#f9fafb",
+  "theme_color": "#4f46e5",
+  "icons": [
+    {
+      "src": "/sg-charity/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
